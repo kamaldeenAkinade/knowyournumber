@@ -1,0 +1,745 @@
+<title>Know Your Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  /* Committed single-theme design: a dark instrument, same world as the pack. */
+  :root {
+    --bg: #0E1113;
+    --bg-lift: #161A1D;
+    --line: #242A2E;
+    --line-soft: #1C2124;
+    --ink: #F0F2EE;
+    --ink-2: #A8B0AC;
+    --ink-3: #6E7773;
+    --green: #63C395;
+    --green-dim: #1B3A2C;
+    --gold: #D4AF63;
+    --warn: #E2825C;
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Poppins", "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    font-weight: 400;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- chrome ---------- */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 20px 24px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .brand {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .rail { display: flex; gap: 5px; }
+  .tick {
+    width: 22px; height: 3px; background: var(--line);
+    border-radius: 2px; transition: background 260ms ease;
+  }
+  .tick.done { background: var(--green); }
+  .tick.now { background: var(--ink); }
+
+  main {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 24px 32px;
+  }
+  .stage { width: 100%; max-width: 560px; }
+
+  /* ---------- steps ---------- */
+  .step { display: none; }
+  .step.live { display: block; animation: rise 340ms cubic-bezier(.2,.7,.3,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .kicker {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--green); margin-bottom: 14px;
+  }
+  .q {
+    font-size: clamp(27px, 5.2vw, 38px);
+    font-weight: 600; line-height: 1.14; letter-spacing: -0.025em;
+    margin: 0 0 12px; text-wrap: balance;
+  }
+  .hint { color: var(--ink-2); font-size: 16px; font-weight: 300; margin: 0 0 30px; max-width: 44ch; }
+
+  /* money input */
+  .money {
+    display: flex; align-items: center; gap: 2px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 8px; transition: border-color 200ms ease;
+  }
+  .money:focus-within { border-bottom-color: var(--green); }
+  .money .naira {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: clamp(28px, 6vw, 40px); color: var(--ink-3); font-weight: 400;
+  }
+  .money input {
+    flex: 1; min-width: 0;
+    background: none; border: 0; outline: none; color: var(--ink);
+    font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+    font-size: clamp(28px, 6vw, 40px); font-weight: 500;
+    padding: 0 0 0 6px;
+  }
+  .money input::placeholder { color: var(--line); }
+
+  /* choices */
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--bg-lift); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px;
+    cursor: pointer; text-align: left; width: 100%;
+    color: var(--ink); font-family: inherit; font-size: 17px; font-weight: 400;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  }
+  .choice:hover { border-color: var(--ink-3); background: #191E21; }
+  .choice:active { transform: scale(0.99); }
+  .choice:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+  .choice .key {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600;
+    color: var(--ink-3); border: 1px solid var(--line);
+    border-radius: 2px; padding: 2px 7px; flex-shrink: 0;
+  }
+  .choice.sel { border-color: var(--green); background: var(--green-dim); }
+  .choice.sel .key { color: var(--green); border-color: var(--green); }
+
+  /* nav */
+  .nav { display: flex; align-items: center; gap: 16px; margin-top: 34px; }
+  .go {
+    background: var(--green); color: #08150E; border: 0;
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    padding: 14px 30px; border-radius: var(--radius); cursor: pointer;
+    transition: filter 160ms ease, transform 160ms ease;
+  }
+  .go:hover { filter: brightness(1.09); }
+  .go:active { transform: scale(0.98); }
+  .go:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .back {
+    background: none; border: 0; color: var(--ink-3); cursor: pointer;
+    font-family: inherit; font-size: 15px; padding: 6px 2px;
+  }
+  .back:hover { color: var(--ink-2); }
+  .back:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 2px; }
+  .enterhint {
+    margin-left: auto; font-size: 12px; color: var(--ink-3);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  @media (max-width: 560px) { .enterhint { display: none; } }
+
+  /* ---------- result ---------- */
+  .verdict-tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 5px 11px; border-radius: 2px; margin-bottom: 18px;
+  }
+  .t-clear { background: var(--green-dim); color: var(--green); }
+  .t-owe   { background: #3A2F14; color: var(--gold); }
+  .t-docs  { background: #3A2F14; color: var(--gold); }
+  .t-late  { background: #3A211A; color: var(--warn); }
+
+  .bignum {
+    font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+    font-size: clamp(42px, 10vw, 66px); font-weight: 500;
+    letter-spacing: -0.03em; line-height: 1; margin: 4px 0 6px;
+  }
+  .bigcap { font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .verdict-line { font-size: 18px; color: var(--ink-2); font-weight: 300; margin: 16px 0 0; max-width: 46ch; }
+
+  .panel {
+    background: var(--bg-lift); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px; margin-top: 22px;
+  }
+  .panel h3 {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 14px;
+  }
+
+  .row {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 8px 0; font-size: 15.5px; color: var(--ink-2); font-weight: 300;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .row:last-child { border-bottom: 0; }
+  .row b { font-weight: 500; color: var(--ink); }
+  .row .v { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); }
+  .row.tot { border-top: 1px solid var(--line); border-bottom: 0; margin-top: 6px; padding-top: 12px; }
+  .row.tot .v { color: var(--green); font-weight: 600; }
+
+  /* band bar */
+  .bar { display: flex; height: 12px; border-radius: 2px; overflow: hidden; background: var(--line-soft); margin-bottom: 14px; }
+  .seg { height: 100%; width: 0; transition: width 700ms cubic-bezier(.2,.7,.3,1); }
+  .legend { display: flex; flex-direction: column; gap: 7px; }
+  .lg { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); font-weight: 300; }
+  .dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .lg .amt { margin-left: auto; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+  @media (max-width: 360px) { .duo { grid-template-columns: 1fr; } }
+  .stat { background: var(--bg-lift); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .stat .k { font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .stat .v { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; font-size: 25px; font-weight: 500; margin-top: 5px; }
+
+  ol.next { margin: 14px 0 0; padding-left: 20px; }
+  ol.next li { margin-bottom: 9px; font-size: 15.5px; color: var(--ink-2); font-weight: 300; }
+  ol.next li::marker { color: var(--green); font-weight: 600; }
+
+  .flag {
+    background: #3A211A; border-left: 3px solid var(--warn);
+    padding: 14px 16px; margin-top: 20px; border-radius: 2px;
+    font-size: 15px; color: var(--ink-2); font-weight: 300;
+  }
+  .flag b { color: var(--warn); font-weight: 600; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+  .ghost {
+    background: none; border: 1px solid var(--line); color: var(--ink-2);
+    font-family: inherit; font-size: 15px; padding: 12px 20px;
+    border-radius: var(--radius); cursor: pointer;
+    transition: border-color 160ms ease, color 160ms ease;
+  }
+  .ghost:hover { border-color: var(--ink-3); color: var(--ink); }
+  .ghost:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+  .passalong {
+    margin-top: 30px; padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 15px; color: var(--ink-3); font-weight: 300; line-height: 1.6;
+  }
+  .passalong a {
+    color: var(--green); text-decoration: none;
+    border-bottom: 1px solid rgba(99,195,149,0.35);
+    padding-bottom: 1px;
+  }
+  .passalong a:hover { border-bottom-color: var(--green); }
+  .passalong a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 2px; }
+
+  footer {
+    border-top: 1px solid var(--line-soft); padding: 20px 24px 30px;
+    font-size: 13px; color: var(--ink-3); font-weight: 300;
+    text-align: center; line-height: 1.6;
+  }
+  footer .wrap { max-width: 620px; margin: 0 auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+
+<div class="topbar">
+  <span class="brand">Know Your Number</span>
+  <div class="rail" id="rail" aria-hidden="true"></div>
+</div>
+
+<main>
+  <div class="stage">
+
+    <!-- 0 -->
+    <section class="step live" data-kind="choice" data-key="res">
+      <div class="kicker">Question 1</div>
+      <h1 class="q">Do you live in Nigeria?</h1>
+      <p class="hint">Say yes if you are based here, keep a home here, or your work and family life is here. If yes, money from abroad counts too.</p>
+      <div class="choices">
+        <button class="choice" data-val="1"><span class="key">1</span>Yes, I am based in Nigeria</button>
+        <button class="choice" data-val="0"><span class="key">2</span>No, I live outside Nigeria</button>
+      </div>
+    </section>
+
+    <!-- 1 -->
+    <section class="step" data-kind="choice" data-key="mode">
+      <div class="kicker">Question 2</div>
+      <h1 class="q">How does your money come in?</h1>
+      <p class="hint">Pick the one that fits most of your income.</p>
+      <div class="choices">
+        <button class="choice" data-val="self"><span class="key">1</span>Clients or my own business</button>
+        <button class="choice" data-val="both"><span class="key">2</span>A salary, plus something on the side</button>
+        <button class="choice" data-val="paye"><span class="key">3</span>Only a salary, tax already deducted</button>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="step" data-kind="choice" data-key="tin">
+      <div class="kicker">Question 3</div>
+      <h1 class="q">Have you ever filed a tax return?</h1>
+      <p class="hint">Not your employer filing for you. You, personally.</p>
+      <div class="choices">
+        <button class="choice" data-val="1"><span class="key">1</span>Yes, I have filed before</button>
+        <button class="choice" data-val="0"><span class="key">2</span>Never, or I am not sure</button>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="step" data-kind="money" data-key="ngn">
+      <div class="kicker">What came in</div>
+      <h1 class="q">Money from Nigerian clients or your business</h1>
+      <p class="hint">Everything they paid you this year, before you take any costs off. Rough is fine.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- 4 -->
+    <section class="step" data-kind="money" data-key="fx">
+      <div class="kicker">What came in</div>
+      <h1 class="q">Money from foreign clients or platforms</h1>
+      <p class="hint">Upwork, Deel, Wise, Payoneer, direct transfers. In naira, converted at the official rate on the day it landed.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- 5 -->
+    <section class="step" data-kind="money" data-key="crypto">
+      <div class="kicker">What came in</div>
+      <h1 class="q">Crypto gains you took</h1>
+      <p class="hint">Only your gains, not everything you traded. Losses do not give you anything back.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- 6 -->
+    <section class="step" data-kind="money" data-key="exp">
+      <div class="kicker">What comes off</div>
+      <h1 class="q">Business costs you have receipts for</h1>
+      <p class="hint">Only what you spent to do the work. Software, a laptop, transport to a client, someone you paid. Not groceries.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- 7 -->
+    <section class="step" data-kind="money" data-key="rent">
+      <div class="kicker">What comes off</div>
+      <h1 class="q">Your yearly rent</h1>
+      <p class="hint">You get 20 percent of this off, up to ₦500,000. Only if you actually pay rent. Leave it at zero if you own or stay with family.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- 8 -->
+    <section class="step" data-kind="money" data-key="ded">
+      <div class="kicker">What comes off</div>
+      <h1 class="q">Pension, NHF, NHIS, life assurance</h1>
+      <p class="hint">Your own contributions for the year, not your employer's side.</p>
+      <div class="money"><span class="naira">&#8358;</span><input inputmode="numeric" placeholder="0" autocomplete="off"></div>
+    </section>
+
+    <!-- result -->
+    <section class="step" id="result">
+      <span class="verdict-tag t-clear" id="vtag">Result</span>
+      <h1 class="q" id="vtitle" style="margin-bottom:6px"></h1>
+      <p class="verdict-line" id="vline"></p>
+
+      <div class="panel" style="margin-top:26px">
+        <h3>Your tax for the year</h3>
+        <div class="bignum" id="bignum">&#8358;0</div>
+        <div class="bigcap" id="bigcap">Estimated</div>
+      </div>
+
+      <div class="duo">
+        <div class="stat"><div class="k">Real rate</div><div class="v" id="eff">0%</div></div>
+        <div class="stat"><div class="k">Put aside monthly</div><div class="v" id="mon">&#8358;0</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>How it was worked out</h3>
+        <div class="row"><b>Total money in</b><span class="v" id="r-in">&#8358;0</span></div>
+        <div class="row"><span>Business costs</span><span class="v" id="r-exp">&#8358;0</span></div>
+        <div class="row"><span>Rent relief</span><span class="v" id="r-rent">&#8358;0</span></div>
+        <div class="row"><span>Pension and others</span><span class="v" id="r-ded">&#8358;0</span></div>
+        <div class="row tot"><b>Taxed on</b><span class="v" id="r-tax">&#8358;0</span></div>
+      </div>
+
+      <div class="panel" id="bandpanel">
+        <h3>Where the tax comes from</h3>
+        <div class="bar" id="bar"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <div class="flag" id="flag" hidden></div>
+
+      <div class="panel">
+        <h3>Do these next</h3>
+        <ol class="next" id="next"></ol>
+      </div>
+
+      <div class="actions">
+        <button class="ghost" id="copy">Copy my summary</button>
+        <button class="ghost" id="again">Start again</button>
+      </div>
+
+      <p class="passalong">
+        Somebody sent you this? It comes with The Quiet Compliance Pack, which covers
+        what to do when you have never filed, the records that protect you, and what to say
+        when anyone asks. <a href="https://selar.com/qcp">See the pack</a>.
+      </p>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    An estimate, not a tax computation. It applies the headline bands and the two commonest reliefs to figures you type in.
+    It does not cover every deduction, state variation, double taxation relief or minimum tax, and it is not tax or legal advice.
+    Nothing you type leaves your phone. Bands reflect the Nigeria Tax Act as it applies from 1 January 2026.
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var BANDS = [
+    { to: 800000,   rate: 0.00, name: "First ₦800,000",  col: "#2A3136" },
+    { to: 3000000,  rate: 0.15, name: "Up to ₦3m",       col: "#63C395" },
+    { to: 12000000, rate: 0.18, name: "Up to ₦12m",      col: "#4FA87E" },
+    { to: 25000000, rate: 0.21, name: "Up to ₦25m",      col: "#D4AF63" },
+    { to: 50000000, rate: 0.23, name: "Up to ₦50m",      col: "#C4924A" },
+    { to: Infinity, rate: 0.25, name: "Above ₦50m",      col: "#E2825C" }
+  ];
+
+  var steps = Array.prototype.slice.call(document.querySelectorAll(".step"));
+  var resultEl = document.getElementById("result");
+  var qSteps = steps.filter(function (s) { return s !== resultEl; });
+  var rail = document.getElementById("rail");
+  var idx = 0;
+  var data = {};
+
+  // restore anything from a previous visit
+  try {
+    var saved = localStorage.getItem("kyn.v1");
+    if (saved) data = JSON.parse(saved) || {};
+  } catch (e) { data = {}; }
+
+  function save() {
+    try { localStorage.setItem("kyn.v1", JSON.stringify(data)); } catch (e) {}
+  }
+
+  qSteps.forEach(function () {
+    var t = document.createElement("span");
+    t.className = "tick";
+    rail.appendChild(t);
+  });
+
+  function paintRail() {
+    var ticks = rail.children;
+    for (var i = 0; i < ticks.length; i++) {
+      ticks[i].className = "tick" + (i < idx ? " done" : (i === idx ? " now" : ""));
+    }
+  }
+
+  function fmt(n) { return "₦" + Math.round(n).toLocaleString("en-NG"); }
+  function grp(v) {
+    var d = String(v).replace(/[^0-9]/g, "");
+    return d === "" ? "" : parseInt(d, 10).toLocaleString("en-NG");
+  }
+  function val(k) { return Number(data[k] || 0); }
+
+  function show(i) {
+    steps.forEach(function (s) { s.classList.remove("live"); });
+    var el = (i >= qSteps.length) ? resultEl : qSteps[i];
+    el.classList.add("live");
+    idx = i;
+    paintRail();
+    if (i < qSteps.length) {
+      var input = el.querySelector("input");
+      if (input) { setTimeout(function () { input.focus(); }, 60); }
+      else {
+        var first = el.querySelector(".choice");
+        if (first) setTimeout(function () { first.focus(); }, 60);
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function nextFrom(i) {
+    // salary-only people skip the income questions entirely
+    if (data.mode === "paye") {
+      if (i === 1) return 9; // straight to result
+    }
+    return i + 1;
+  }
+
+  function addNav(step, i) {
+    var nav = document.createElement("div");
+    nav.className = "nav";
+    if (step.dataset.kind === "money") {
+      var go = document.createElement("button");
+      go.className = "go";
+      go.type = "button";
+      go.textContent = (i === qSteps.length - 1) ? "See my number" : "Continue";
+      go.addEventListener("click", function () { advance(i); });
+      nav.appendChild(go);
+    }
+    if (i > 0) {
+      var back = document.createElement("button");
+      back.className = "back";
+      back.type = "button";
+      back.textContent = "Back";
+      back.addEventListener("click", function () { show(Math.max(0, i - 1)); });
+      nav.appendChild(back);
+    }
+    if (step.dataset.kind === "money") {
+      var hint = document.createElement("span");
+      hint.className = "enterhint";
+      hint.textContent = "press enter";
+      nav.appendChild(hint);
+    }
+    step.appendChild(nav);
+  }
+
+  function advance(i) {
+    var step = qSteps[i];
+    if (step.dataset.kind === "money") {
+      var input = step.querySelector("input");
+      data[step.dataset.key] = Number(String(input.value).replace(/[^0-9]/g, "") || 0);
+      save();
+    }
+    var n = nextFrom(i);
+    if (n >= qSteps.length) { render(); show(qSteps.length); }
+    else show(n);
+  }
+
+  qSteps.forEach(function (step, i) {
+    if (step.dataset.kind === "choice") {
+      step.querySelectorAll(".choice").forEach(function (btn) {
+        if (data[step.dataset.key] === btn.dataset.val) btn.classList.add("sel");
+        btn.addEventListener("click", function () {
+          step.querySelectorAll(".choice").forEach(function (b) { b.classList.remove("sel"); });
+          btn.classList.add("sel");
+          data[step.dataset.key] = btn.dataset.val;
+          save();
+          setTimeout(function () { advance(i); }, 130);
+        });
+      });
+    } else {
+      var input = step.querySelector("input");
+      if (data[step.dataset.key]) input.value = grp(data[step.dataset.key]);
+      input.addEventListener("input", function () {
+        var pos = input.value.length - input.selectionStart;
+        input.value = grp(input.value);
+        var np = Math.max(0, input.value.length - pos);
+        try { input.setSelectionRange(np, np); } catch (e) {}
+      });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); advance(i); }
+      });
+    }
+    addNav(step, i);
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (idx >= qSteps.length) return;
+    var step = qSteps[idx];
+    if (step.dataset.kind !== "choice") return;
+    var n = parseInt(e.key, 10);
+    if (!isNaN(n)) {
+      var btns = step.querySelectorAll(".choice");
+      if (btns[n - 1]) btns[n - 1].click();
+    }
+  });
+
+  function compute() {
+    var resident = data.res !== "0";
+    var mode = data.mode || "self";
+    var inTotal = val("ngn") + (resident ? val("fx") : 0) + val("crypto");
+    var expense = mode === "paye" ? 0 : Math.min(val("exp"), inTotal);
+    var rentRelief = Math.min(val("rent") * 0.2, 500000);
+    var taxable = Math.max(0, inTotal - expense - rentRelief - val("ded"));
+
+    var rem = taxable, prev = 0, tax = 0, rows = [];
+    for (var i = 0; i < BANDS.length; i++) {
+      var b = BANDS[i];
+      var width = b.to - prev;
+      var inBand = Math.max(0, Math.min(rem, width));
+      var t = inBand * b.rate;
+      tax += t;
+      rows.push({ name: b.name, rate: b.rate, amount: inBand, tax: t, col: b.col });
+      rem -= inBand; prev = b.to;
+      if (rem <= 0) break;
+    }
+    return {
+      inTotal: inTotal, expense: expense, rentRelief: rentRelief,
+      ded: val("ded"), taxable: taxable, tax: tax, rows: rows,
+      eff: inTotal > 0 ? (tax / inTotal) * 100 : 0,
+      mode: mode, filed: data.tin === "1"
+    };
+  }
+
+  function verdict(c) {
+    if (c.mode === "paye") return {
+      cls: "t-clear", tag: "You are covered",
+      title: "Your employer is handling this.",
+      line: "If every naira you earn is taxed through payroll and you have nothing on the side, there is nothing else to work out. Check your payslip actually shows tax coming off, and keep this page for the day a side income starts.",
+      steps: ["Check PAYE appears on your payslip.", "Ask your employer for your tax ID if you do not know it.", "Come back here the day you take on a client."]
+    };
+    if (!c.filed) return {
+      cls: "t-late", tag: "You are behind",
+      title: "You have never filed. That is fixable.",
+      line: "This is the most common position in Nigeria right now, and the most recoverable. What matters is the order you do things in, not how long it has been.",
+      steps: [
+        "Do not contact anybody yet. Get your own records straight first.",
+        "Pull your bank and platform statements and rebuild this year's income.",
+        "Get your tax ID at taxid.nrs.gov.ng using your NIN. It is free.",
+        "Take advice before you say anything about earlier years."
+      ]
+    };
+    var foreign = val("fx") + val("crypto");
+    if (foreign > 0 && foreign >= c.inTotal * 0.4) return {
+      cls: "t-docs", tag: "Records matter most",
+      title: "Your exposure is the paperwork, not the tax.",
+      line: "Living here means your worldwide income counts. The tax itself is rarely the hard part. Proving which rate you used and when the money was yours is.",
+      steps: [
+        "Start a dated income log with the rate you converted at.",
+        "Export full statements from every platform that has paid you.",
+        "Keep transfers between your own accounts clearly separate from income.",
+        "Set aside the monthly figure above so March is not a shock."
+      ]
+    };
+    if (c.tax > 0) return {
+      cls: "t-owe", tag: "You owe something",
+      title: "Smaller than you were expecting.",
+      line: "The rate climbs in steps and each step only touches the money inside it. That is why your real rate is well under the number people quote.",
+      steps: [
+        "Move the monthly figure above into a separate account, starting now.",
+        "Keep receipts for anything you counted as a business cost.",
+        "Put 31 March in your calendar for next year's filing."
+      ]
+    };
+    return {
+      cls: "t-clear", tag: "Nothing due",
+      title: "You are under the line.",
+      line: "On these figures no tax appears due. Being under the line and being able to prove it are two different things though, and the second one is what actually protects you.",
+      steps: [
+        "Keep a simple record of income anyway, month by month.",
+        "Get your tax ID. Being under the threshold is not the same as being outside the system.",
+        "Run this again the moment your income rises or a foreign client appears."
+      ]
+    };
+  }
+
+  var lastSummary = "";
+
+  function countTo(el, target) {
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || target === 0) { el.textContent = fmt(target); return; }
+    var start = null, dur = 750;
+    function frame(ts) {
+      if (!start) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(target * eased);
+      if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function render() {
+    var c = compute();
+    var v = verdict(c);
+
+    var tag = document.getElementById("vtag");
+    tag.className = "verdict-tag " + v.cls;
+    tag.textContent = v.tag;
+    document.getElementById("vtitle").textContent = v.title;
+    document.getElementById("vline").textContent = v.line;
+
+    countTo(document.getElementById("bignum"), c.tax);
+    document.getElementById("bigcap").textContent = c.tax > 0 ? "Estimated, for the year" : "Nothing due on these figures";
+
+    document.getElementById("eff").textContent = (Math.round(c.eff * 10) / 10) + "%";
+    document.getElementById("mon").textContent = fmt(c.tax / 12);
+
+    document.getElementById("r-in").textContent = fmt(c.inTotal);
+    document.getElementById("r-exp").textContent = "-" + fmt(c.expense);
+    document.getElementById("r-rent").textContent = "-" + fmt(c.rentRelief);
+    document.getElementById("r-ded").textContent = "-" + fmt(c.ded);
+    document.getElementById("r-tax").textContent = fmt(c.taxable);
+
+    var bar = document.getElementById("bar");
+    var legend = document.getElementById("legend");
+    var panel = document.getElementById("bandpanel");
+    bar.innerHTML = ""; legend.innerHTML = "";
+    var paying = c.rows.filter(function (r) { return r.amount > 0; });
+    panel.hidden = c.taxable <= 0;
+
+    paying.forEach(function (r, i) {
+      var seg = document.createElement("span");
+      seg.className = "seg";
+      seg.style.background = r.col;
+      bar.appendChild(seg);
+      setTimeout(function () {
+        seg.style.width = ((r.amount / c.taxable) * 100).toFixed(2) + "%";
+      }, 90 + i * 90);
+
+      var lg = document.createElement("div");
+      lg.className = "lg";
+      lg.innerHTML = '<span class="dot" style="background:' + r.col + '"></span>' +
+        '<span>' + r.name + ' &middot; ' + Math.round(r.rate * 100) + '%</span>' +
+        '<span class="amt">' + fmt(r.tax) + '</span>';
+      legend.appendChild(lg);
+    });
+
+    var flag = document.getElementById("flag");
+    if (!c.filed && c.mode !== "paye") {
+      flag.hidden = false;
+      flag.innerHTML = "<b>Worth knowing.</b> Filing late carries ₦100,000 for the first month and ₦50,000 for every month after. It is a fixed amount and it stops growing the moment you sort it out, which is the whole reason to move now rather than in March.";
+    } else { flag.hidden = true; }
+
+    var ol = document.getElementById("next");
+    ol.innerHTML = "";
+    v.steps.forEach(function (s) {
+      var li = document.createElement("li");
+      li.textContent = s;
+      ol.appendChild(li);
+    });
+
+    lastSummary =
+      "My tax position\n" +
+      "----------------------\n" +
+      "Total money in:  " + fmt(c.inTotal) + "\n" +
+      "Taxed on:        " + fmt(c.taxable) + "\n" +
+      "Tax for the year:" + fmt(c.tax) + "\n" +
+      "Real rate:       " + (Math.round(c.eff * 10) / 10) + "%\n" +
+      "Set aside:       " + fmt(c.tax / 12) + " a month\n" +
+      "----------------------\n" +
+      "Estimate only. Not tax advice.";
+  }
+
+  document.getElementById("copy").addEventListener("click", function () {
+    var btn = this;
+    function done() { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy my summary"; }, 1600); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastSummary).then(done, function () { btn.textContent = "Could not copy"; });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = lastSummary; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Could not copy"; }
+      document.body.removeChild(ta);
+    }
+  });
+
+  document.getElementById("again").addEventListener("click", function () {
+    data = {};
+    try { localStorage.removeItem("kyn.v1"); } catch (e) {}
+    qSteps.forEach(function (s) {
+      var inp = s.querySelector("input");
+      if (inp) inp.value = "";
+      s.querySelectorAll(".choice").forEach(function (b) { b.classList.remove("sel"); });
+    });
+    show(0);
+  });
+
+  paintRail();
+})();
+</script>
